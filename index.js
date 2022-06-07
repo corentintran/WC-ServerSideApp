@@ -27,15 +27,21 @@ router.get('/countries', function(req, res, next) {
 });
 
 /* *********  GET Volcanoes ***********/
+// TODO filter with population
 router.get('/volcanoes', function(req, res, next) {
   const country = req.query.country;
   const pop = req.query.populatedWithin;
-
-  if (!country){
+  var filter;
+  if (!req.query.country){
     res.status(400).json({ error: true, message:"Country is a required query parameter." });
     return;
   }
-  req.db.from('data').select('id', 'name', 'country', 'region', 'subregion').where({'country':country})
+  if (!req.query.populatedWithin){
+    filter = {'country':req.query.country};
+  } else if ()
+
+
+  req.db.from('data').select('id', 'name', 'country', 'region', 'subregion').where(filter)
   .then(
     volcanoes => {
       res.status(200).json({
