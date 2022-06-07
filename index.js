@@ -72,7 +72,7 @@ const authorize = function (req, res, next) {
   if (!auth || auth.split(" ").length !== 2) {
     res.status(401).json({
       error: true,
-      message: "Authorization header ('Bearer token') not found"
+      message: /*"Authorization header ('Bearer token') not found"*/ "Authorization header is malformed"
     });
     return;
   }
