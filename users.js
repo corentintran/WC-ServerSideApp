@@ -4,10 +4,11 @@ var router = express.Router();
 
 /* ******* POST user register *******/
 router.post('user/register', function(req, res, next) {
-  if (!req.body.email || !req.body.password) {
+  const { email, password } = req.body;
+  if (!email || !password) {
     res.status(400).json({ error: true, message: "Request body incomplete, both email and password are required" });
     return;
-  } else {
+  }
   res.status(201).json({
     message: "User created"
   })
@@ -18,14 +19,14 @@ router.post('user/register', function(req, res, next) {
       message: "User already exists"
     })
   });
-}
 });
 /* ********* POST user login *******/
 router.post('user/login', function(req, res, next) {
-  if (!req.body.email || !req.body.password) {
+  const { email, password } = req.body;
+  if (!email || !password) {
     res.status(400).json({ error: true, message: "Request body incomplete, both email and password are required" });
     return;
-  } else {
+  }
   res.status(200).json({
     token: tkn,
     token_type: 'Bearer',
@@ -39,7 +40,7 @@ router.post('user/login', function(req, res, next) {
     })
   });
 }
-});
+);
 /* ******** GET user profile *******/
 router.get('/user/:email/profile', function(req, res, next) {
   res.status(200).json({

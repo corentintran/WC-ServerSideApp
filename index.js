@@ -71,8 +71,8 @@ const authorize = function (req, res, next) {
   const auth = req.headers.authorization;
   if (!auth || auth.split(" ").length !== 2) {
     res.status(401).json({
-      Error: true,
-      Message: "Missing or malformed JWT"
+      error: true,
+      message: "Authorization header ('Bearer token') not found"
     });
     return;
   }
@@ -81,8 +81,8 @@ const authorize = function (req, res, next) {
     const payload = jwt.verify(token, secretKey);
     if (Date.now() > payload.exp) {
       res.status(401).json({
-        Error: true,
-        Message: "Expired JWT"
+        error: true,
+        message: "JWT token has expired"
       });
       return;
     }
@@ -90,8 +90,8 @@ const authorize = function (req, res, next) {
     next();
   } catch (e) {
     res.status(401).json({
-      Error: true,
-      Message: "Invalid JWT"
+      error: true,
+      message: "Invalid JWT token"
     });
     return;
   }
