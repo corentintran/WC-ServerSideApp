@@ -14,9 +14,7 @@ router.get('/countries', function(req, res, next) {
   .then(rows => rows.map(row=>row.country))
   .then(
     country => {
-      res.status(200).json({
-        country
-      })
+      res.status(200).json(country)
     }
   )
   .catch(err => {
@@ -31,6 +29,7 @@ router.get('/countries', function(req, res, next) {
 /* *********  GET Volcanoes ***********/
 router.get('/volcanoes', function(req, res, next) {
   const country = req.query.country;
+  const pop = req.query.populatedWithin;
 
   if (!country){
     res.status(400).json({ error: true, message:"Country is a required query parameter." });
@@ -53,7 +52,7 @@ router.get('/volcanoes', function(req, res, next) {
   });
 });
 
-
+/* Authorization */
 const authorize = function (req, res, next) {
   const auth = req.headers.authorization;
   if (!auth || auth.split(" ").length !== 2) {
@@ -92,11 +91,13 @@ router.get('/volcano/:id', authorize, function(req, res, next) {
     res.status(404).json({ error: true, message:"Volcano with ID: 99999 not found." });
     return;
   }
-  req.db.from('data').select('id', 'name', 'country', 'region', 'subregion').where({'country':country})
+  req.db.from('data')
+  .select('id', 'name', 'country', 'region', 'subregion', 'last_eruption', 'summit', 'elevation', 'latitude', 'longitude')
+  .where({'id':id})
   .then(
-    volcanoes => {
+    volcano => {
       res.status(200).json({
-        volcanoes
+        volcano
       })
     }
   )
@@ -107,33 +108,6 @@ router.get('/volcano/:id', authorize, function(req, res, next) {
       message: "Invalid query parameters. Only country and populatedWithin are permitted."
     })
   });
-});
-
-
-
-
-
-
-router.post('/api/update', function(req, res, next) {
-  if (!req.body.City || !req.body.CountryCode || !req.body.Pop) {
-    res.status(400).json({ Error: true, Message: "Missing parameter" });
-    return;
-  }
-  req.db.from('City').update({'Population': req.body.Pop}).where({'CountryCode': req.body.CountryCode, 'Name': req.body.City })
-  .then(() => res.status(200).json({
-    Error: false,
-    Message: `Updated population of ${req.body.City} to ${req.body.Pop}`
-  }))
-  .catch(err => {
-    console.log(err);
-    res.status(500).json({
-      Error: true,
-      Message: "Error in MySQL query"
-    })
-  });
-
-  //res.send(JSON.stringify(req.body));
-
 });
 
 module.exports = router;
