@@ -3,7 +3,7 @@ var router = express.Router();
 
 
 /* ******* POST user register *******/
-router.post('user/register', function(req, res, next) {
+router.post('/register', function(req, res, next) {
   const { email, password } = req.body;
   if (!email || !password) {
     res.status(400).json({ error: true, message: "Request body incomplete, both email and password are required" });
@@ -27,7 +27,7 @@ router.post('user/register', function(req, res, next) {
 });
 
 /* ********* POST user login *******/
-router.post('user/login', function(req, res, next) {
+router.post('/login', function(req, res, next) {
   const { email, password } = req.body;
   if (!email || !password) {
     res.status(400).json({ error: true, message: "Request body incomplete, both email and password are required" });
@@ -68,7 +68,7 @@ router.post('user/login', function(req, res, next) {
 
 
 /* ******** GET user profile *******/
-router.get('/user/:email/profile', function(req, res, next) {
+router.get('/:email/profile', function(req, res, next) {
   const email = req.params.email;
   if (!email){
     res.status(404).json({ error: true, message:"Volcano with ID: 99999 not found." });
