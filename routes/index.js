@@ -1,10 +1,22 @@
 var express = require('express');
 var router = express.Router();
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+const secretKey = "SUPER SECRET KEY DO NOT STEAL";
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'The Volcano API' });
 });
+
+/* ************ GET me *************/
+router.get('/me', function(req, res, next) {
+  res.status(200).json({
+    name: 'Corentin Tran',
+    student_number: 'n11231670'
+  })
+});
+
 
 
 
@@ -99,7 +111,7 @@ const authorize = function (req, res, next) {
 
 /* ********* GET Volcanoes {id}***********/
 router.get('/volcano/:id', authorize, function(req, res, next) {
-  const id = req.params.country;
+  const id = req.params.id;
 
   if (!id){
     res.status(404).json({ error: true, message:"Volcano with ID: 99999 not found." });
