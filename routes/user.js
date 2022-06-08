@@ -9,7 +9,7 @@ router.post('/register', function(req, res, next) {
     res.status(400).json({ error: true, message: "Request body incomplete, both email and password are required" });
     return;
   }
-  req.db.from("Users").select("*").where({ email })
+  req.db.from("users").select("*").where({ email })
     .then(users => {
       if (users.length > 0) {
         res.status(409).json({
@@ -19,7 +19,7 @@ router.post('/register', function(req, res, next) {
         return;
       }
       const hash = bcrypt.hashSync(password, 10);
-      req.db.from("Users").insert({ email, hash })
+      req.db.from("users").insert({ email, hash })
         .then(() => {
           res.status(201).json({message: "User created"});
         });
@@ -33,7 +33,7 @@ router.post('/login', function(req, res, next) {
     res.status(400).json({ error: true, message: "Request body incomplete, both email and password are required" });
     return;
   }
-  req.db.from("Users").select("*").where({ email })
+  req.db.from("users").select("*").where({ email })
     .then(users => {
       if (users.length === 0) {
         res.status(401).json({
@@ -67,25 +67,78 @@ router.post('/login', function(req, res, next) {
 );
 
 
-/* ******** GET user profile *******/
-router.get('/:email/profile', function(req, res, next) {
-  const email = req.params.email;
-  if (!email){
-    res.status(404).json({ error: true, message:"Volcano with ID: 99999 not found." });
-    return;
-  }
-  res.status(200).json({
-
-  })
-
-  .catch(err => {
-    console.log(err);
-    res.status(400).json({
+/* Authorization */
+const authentificated_profile = function (req, res, next) {
+  const auth = req.headers.authorization;
+  if (!auth || auth.split(" ").length !== 2) {
+    res.status(401).json({
       error: true,
-      message: "Invalid query parameters. Query parameters are not permitted."
+      message: /*"Authorization header ('Bearer token') not found"*/ "Authorization header is malformed"
+    });
+    next();
+  }
+  const token = auth.split(" ")[1];
+  try {
+    const payload = jwt.verify(token, secretKey);
+    if (Date.now() > payload.exp) {
+      res.status(401).json({
+        error: true,
+        message: "JWT token has expired"
+      });
+      next();
+    }
+    //Authentificated access to user profile
+    const email = req.params.email;
+    req.db.from('users').select('firstname', 'lastname', 'dob', 'address').where({ email })
+    .then(users => {
+      if (users.length === 0) {
+        res.status(404).json({
+          error: true,
+          message: "Incorrect email"
+        });
+        return;
+      }
+      res.status(200).json({
+        email,
+        firstname,
+        lastname, 
+        dob,
+        address
+      })
+      return;
     })
-  });
-});
+
+  } catch (e) {
+    res.status(401).json({
+      error: true,
+      message: "Invalid JWT token"
+    });
+    next();
+  }
+};
+
+const public_profile = function (req, res, next) {
+  //partial access to user profile
+  const email = req.params.email;
+  req.db.from('users').select('firstname', 'lastname').where({ email })
+  .then(users => {
+    if (users.length === 0) {
+      res.status(404).json({
+        error: true,
+        message: "Incorrect email"
+      });
+      return;
+    }
+    res.status(200).json({
+      email,
+      firstname,
+      lastname
+    })
+  })
+};
+
+/* ******** GET user profile *******/
+router.get('/:email/profile', authentificated_profile, public_profile);
 
 
 module.exports = router;

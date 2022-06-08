@@ -79,14 +79,14 @@ router.get('/volcanoes', function(req, res, next) {
 });
 
 /* Authorization */
-const authorize = function (req, res, next) {
+const authorized_access = function (req, res, next) {
   const auth = req.headers.authorization;
   if (!auth || auth.split(" ").length !== 2) {
     res.status(401).json({
       error: true,
       message: /*"Authorization header ('Bearer token') not found"*/ "Authorization header is malformed"
     });
-    return;
+    next();
   }
   const token = auth.split(" ")[1];
   try {
@@ -96,23 +96,45 @@ const authorize = function (req, res, next) {
         error: true,
         message: "JWT token has expired"
       });
+      next();
+    }
+    // Authorized : access to all volcano's data
+    const id = req.params.id;
+    if (!id){
+      res.status(404).json({ error: true, message:"Volcano with ID:"+id+" not found." });
       return;
     }
+    req.db.from('data')
+    .select('id', 'name', 'country', 'region', 'subregion', 'last_eruption', 'summit', 'elevation', 'latitude', 'longitude', 'population_5km', 'population_10km', 'population_30km', 'population_100km')
+    .where({'id':id})
+    .then(
+      volcano => {
+        res.status(200).json({
+          volcano
+        })
+        return;
+      }
+    )
+    .catch(err => {
+      console.log(err);
+      res.status(400).json({
+        error: true,
+        message: "Invalid query parameters. Only country and populatedWithin are permitted."
+      })
+    });
 
-    next();
   } catch (e) {
     res.status(401).json({
       error: true,
       message: "Invalid JWT token"
     });
-    return;
+    next();
   }
 };
 
-/* ********* GET Volcanoes {id}***********/
-router.get('/volcano/:id', authorize, function(req, res, next) {
+const partial_access = function (req, res, next) {
+  //partial access to volcano data
   const id = req.params.id;
-
   if (!id){
     res.status(404).json({ error: true, message:"Volcano with ID: 99999 not found." });
     return;
@@ -134,6 +156,9 @@ router.get('/volcano/:id', authorize, function(req, res, next) {
       message: "Invalid query parameters. Only country and populatedWithin are permitted."
     })
   });
-});
+};
+
+/* ********* GET Volcanoes {id}***********/
+router.get('/volcano/:id', authorized_access, partial_access);
 
 module.exports = router;
