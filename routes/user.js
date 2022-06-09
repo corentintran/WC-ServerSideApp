@@ -1,5 +1,8 @@
 var express = require('express');
 var router = express.Router();
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+const secretKey = "SUPER SECRET KEY DO NOT STEAL";
 
 
 /* ******* POST user register *******/
