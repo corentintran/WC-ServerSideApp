@@ -70,12 +70,15 @@ router.post('/login', function(req, res, next) {
 /* Authorization */
 const authentificated_profile = function (req, res, next) {
   const auth = req.headers.authorization;
-  if (!auth || auth.split(" ").length !== 2) {
+  if(!auth){
+    next();
+  }
+  if (auth.split(" ").length !== 2) {
     res.status(401).json({
       error: true,
-      message: /*"Authorization header ('Bearer token') not found"*/ "Authorization header is malformed"
+      message: "Authorization header is malformed"
     });
-    next();
+    return;
   }
   const token = auth.split(" ")[1];
   try {
@@ -85,7 +88,7 @@ const authentificated_profile = function (req, res, next) {
         error: true,
         message: "JWT token has expired"
       });
-      next();
+      return;
     }
     const user_email = payload.email;
     //Authentificated access to user profile
@@ -104,7 +107,7 @@ const authentificated_profile = function (req, res, next) {
       error: true,
       message: "Invalid JWT token"
     });
-    next(); //go to public profile, unauthorized access
+    return;
   }
 };
 
