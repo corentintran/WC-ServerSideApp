@@ -79,12 +79,15 @@ router.get('/volcanoes', function(req, res, next) {
 /* Authorization */
 const authorized_access = function (req, res, next) {
   const auth = req.headers.authorization;
-  if (!auth || auth.split(" ").length !== 2) {
+  if (!auth){ //Authorization header not found => go to partial_access to volcano
+    next();
+  }
+  if (auth.split(" ").length !== 2) { //Authorization header malformed => error 401
     res.status(401).json({
       error: true,
-      message: /*"Authorization header ('Bearer token') not found"*/ "Authorization header is malformed"
+      message: "Authorization header is malformed"
     });
-    next();
+    return;
   }
   const token = auth.split(" ")[1];
   try {
@@ -94,16 +97,16 @@ const authorized_access = function (req, res, next) {
         error: true,
         message: "JWT token has expired"
       });
-      next();
+      return;
     }
     // Authorized : access to all volcano's data
     const id = req.params.id;
     if (!id){
-      res.status(404).json({ error: true, message:"Volcano with ID:"+id+" not found." });
+      res.status(404).json({ error: true, message:'Volcano with ID: ' + id + 'not found.'});
       return;
     }
     req.db.from('data')
-    .select('id', 'name', 'country', 'region', 'subregion', 'last_eruption', 'summit', 'elevation', 'latitude', 'longitude', 'population_5km', 'population_10km', 'population_30km', 'population_100km')
+    .select('name', 'country', 'region', 'subregion', 'last_eruption', 'summit', 'elevation', 'latitude', 'longitude', 'population_5km', 'population_10km', 'population_30km', 'population_100km')
     .where({'id':id})
     .then(
       volcano => {
@@ -115,7 +118,7 @@ const authorized_access = function (req, res, next) {
       console.log(err);
       res.status(400).json({
         error: true,
-        message: "Invalid query parameters. Only country and populatedWithin are permitted."
+        message: "Invalid query parameters."
       })
     });
 
@@ -124,7 +127,7 @@ const authorized_access = function (req, res, next) {
       error: true,
       message: "Invalid JWT token"
     });
-    next();
+    return;
   }
 };
 
@@ -132,11 +135,11 @@ const partial_access = function (req, res, next) {
   //partial access to volcano data
   const id = req.params.id;
   if (!id){
-    res.status(404).json({ error: true, message:"Volcano with ID: 99999 not found." });
+    res.status(404).json({ error: true, message:'Volcano with ID: ' + id + 'not found.' });
     return;
   }
   req.db.from('data')
-  .select('id', 'name', 'country', 'region', 'subregion', 'last_eruption', 'summit', 'elevation', 'latitude', 'longitude')
+  .select('name', 'country', 'region', 'subregion', 'last_eruption', 'summit', 'elevation', 'latitude', 'longitude')
   .where({'id':id})
   .then(
     volcano => {
@@ -147,7 +150,7 @@ const partial_access = function (req, res, next) {
     console.log(err);
     res.status(400).json({
       error: true,
-      message: "Invalid query parameters. Only country and populatedWithin are permitted."
+      message: "Invalid query parameters."
     })
   });
 };

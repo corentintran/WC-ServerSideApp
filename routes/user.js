@@ -87,40 +87,31 @@ const authentificated_profile = function (req, res, next) {
       });
       next();
     }
+    const user_email = payload.email;
     //Authentificated access to user profile
     const email = req.params.email;
-    req.db.from('users').select('firstname', 'lastname', 'dob', 'address').where({ email })
-    .then(users => {
-      if (users.length === 0) {
-        res.status(404).json({
-          error: true,
-          message: "Incorrect email"
-        });
+    if (email === user_email) {//the authentificated user wants to access his own profile
+      req.db.from('users').select('firstname', 'lastname', 'dob', 'address').where({ email })
+      .then(user_profile => {
+        res.status(200).json(user_profile)
         return;
-      }
-      res.status(200).json({
-        email,
-        firstname,
-        lastname, 
-        dob,
-        address
       })
-      return;
-    })
+    } 
+    next(); //the authentificated user wants to access his own profile, go to public profile
 
   } catch (e) {
     res.status(401).json({
       error: true,
       message: "Invalid JWT token"
     });
-    next();
+    next(); //go to public profile, unauthorized access
   }
 };
 
 const public_profile = function (req, res, next) {
   //partial access to user profile
   const email = req.params.email;
-  req.db.from('users').select('firstname', 'lastname').where({ email })
+  req.db.from('users').select('email', 'firstname', 'lastname').where({ email })
   .then(users => {
     if (users.length === 0) {
       res.status(404).json({
@@ -129,16 +120,72 @@ const public_profile = function (req, res, next) {
       });
       return;
     }
-    res.status(200).json({
-      email,
-      firstname,
-      lastname
-    })
+    res.status(200).json(users)
   })
 };
 
 /* ******** GET user profile *******/
 router.get('/:email/profile', authentificated_profile, public_profile);
+
+/* ******** PUT user profile *******/
+router.put('/:email/profile',function (req, res, next) {
+  const auth = req.headers.authorization;
+  if (!auth || auth.split(" ").length !== 2) {
+    res.status(401).json({
+      error: true,
+      message: "Authorization header ('Bearer token') not found or Authorization header is malformed"
+    });
+    return;
+  }
+  const token = auth.split(" ")[1];
+  try {
+    const payload = jwt.verify(token, secretKey);
+    if (Date.now() > payload.exp) {
+      res.status(401).json({
+        error: true,
+        message: "JWT token has expired"
+      });
+      return;
+    }
+    const user_email = payload.email;
+    //Authentificated access to user profile
+    const email = req.params.email;
+    const {firstName, lastName, dob, address} = req.body;
+    if (!firstName || !lastName || !dob || !address){
+      res.status(400).json({
+        error: true,
+        message: "Request body incomplete: firstName, lastName, dob and address are required."
+      })
+      return;
+    }
+    check('date-of-birth').isISO8601().toDate()
+    if (email === user_email) {//the authentificated user wants to change his own profile
+      req.db.from('users').update({'firstname':firstName}, {'lastname':lastName}, {'dob':dob}, {'address':address}).where({ email })
+      .then(user_profile => {
+        res.status(200).json({
+          email,
+          firstName,
+          lastName,
+          dob,
+          address
+        })
+      })
+    } else {
+      res.status(403).json({
+        error: true,
+        message: "Forbidden"
+      });
+      return;
+    }
+  } catch (e) {
+    res.status(401).json({
+      error: true,
+      message: "Invalid JWT token"
+    });
+    return;
+  }
+  
+});
 
 
 module.exports = router;
