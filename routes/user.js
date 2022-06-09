@@ -52,15 +52,15 @@ router.post('/login', function(req, res, next) {
         });
         return;
       }
-      const expires_in = 60 * 60 * 24;
+      const exp_in = 60 * 60 * 24;
 
       //const exp = Date.now() + expires_in * 1000;
-      const token = jwt.sign({ email, exp }, secretKey);
+      const tkn = jwt.sign({ email, exp }, secretKey);
 
       res.status(200).json({ 
-        token,
+        token: tkn,
         token_type: "Bearer",
-        expires_in
+        expires_in: exp_in
       });
     });
 }

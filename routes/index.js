@@ -22,11 +22,11 @@ router.get('/me', function(req, res, next) {
 
 /* *********** GET Countries *************/
 router.get('/countries', function(req, res, next) {
-  req.db.from('data').select('country')
+  req.db.from('data').select('country').distinct()
   .then(rows => rows.map(row=>row.country))
   .then(
-    country => {
-      res.status(200).json(country)
+    countries => {
+      res.status(200).json(countries)
     }
   )
   .catch(err => {
@@ -64,9 +64,7 @@ router.get('/volcanoes', function(req, res, next) {
   req.db.from('data').select('id', 'name', 'country', 'region', 'subregion').where(filter)
   .then(
     volcanoes => {
-      res.status(200).json({
-        volcanoes
-      })
+      res.status(200).json(volcanoes)
     }
   )
   .catch(err => {
@@ -109,9 +107,7 @@ const authorized_access = function (req, res, next) {
     .where({'id':id})
     .then(
       volcano => {
-        res.status(200).json({
-          volcano
-        })
+        res.status(200).json(volcano)
         return;
       }
     )
@@ -144,9 +140,7 @@ const partial_access = function (req, res, next) {
   .where({'id':id})
   .then(
     volcano => {
-      res.status(200).json({
-        volcano
-      })
+      res.status(200).json(volcano)
     }
   )
   .catch(err => {
