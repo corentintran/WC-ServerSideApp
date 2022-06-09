@@ -19,7 +19,6 @@ router.get('/me', function(req, res, next) {
 
 
 
-
 /* *********** GET Countries *************/
 router.get('/countries', function(req, res, next) {
   req.db.from('data').select('country').distinct()

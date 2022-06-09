@@ -19,7 +19,7 @@ router.post('/register', function(req, res, next) {
         return;
       }
       const hash = bcrypt.hashSync(password, 10);
-      req.db.from("users").insert({ email, hash })
+      req.db.from("users").insert({ email, hash, firstName:null, lastName:null, dob:null, address:null})
         .then(() => {
           res.status(201).json({message: "User created"});
         });
@@ -54,7 +54,7 @@ router.post('/login', function(req, res, next) {
       }
       const exp_in = 60 * 60 * 24;
 
-      //const exp = Date.now() + expires_in * 1000;
+      const exp = Date.now() + expires_in * 1000;
       const tkn = jwt.sign({ email, exp }, secretKey);
 
       res.status(200).json({ 
@@ -100,7 +100,7 @@ const authentificated_profile = function (req, res, next) {
         return;
       })
     } 
-    next(); //the authentificated user wants to access his own profile, go to public profile
+    next(); //the authentificated user wants to access someome else's profile, go to public profile
 
   } catch (e) {
     res.status(401).json({
@@ -131,7 +131,7 @@ const public_profile = function (req, res, next) {
 router.get('/:email/profile', authentificated_profile, public_profile);
 
 /* ******** PUT user profile *******/
-router.put('/:email/profile',function (req, res, next) {
+const authentify = function (req, res, next) {
   const auth = req.headers.authorization;
   if (!auth || auth.split(" ").length !== 2) {
     res.status(401).json({
@@ -150,19 +150,57 @@ router.put('/:email/profile',function (req, res, next) {
       });
       return;
     }
+    next();
+  } catch (e) {
+    res.status(401).json({
+      error: true,
+      message: "Invalid JWT token"
+    });
+    return;
+  }
+}
+
+router.put('/:email/profile', authorize, function (req, res, next) {
+  
     const user_email = payload.email;
-    //Authentificated access to user profile
     const email = req.params.email;
-    const {firstName, lastName, dob, address} = req.body;
-    if (!firstName || !lastName || !dob || !address){
-      res.status(400).json({
-        error: true,
-        message: "Request body incomplete: firstName, lastName, dob and address are required."
-      })
-      return;
-    }
-    check('date-of-birth').isISO8601().toDate()
-    if (email === user_email) {//the authentificated user wants to change his own profile
+
+    
+    //Authentificated matching user
+    if (email === user_email) {
+      const {firstName, lastName, dob, address} = req.body;
+      //Missing body keys
+      if (!firstName || !lastName || !dob || !address){
+        res.status(400).json({
+          error: true,
+          message: "Request body incomplete: firstName, lastName, dob and address are required."
+        })
+        return;
+      }
+      //Invalid FirstName, LastName or Address
+      if (typeof firstName !== 'string' || typeof lastName !== 'string' || typeof address !== 'string'){
+        res.status(400).json({
+          error: true,
+          message: "Request body invalid: firstName, lastName and address must be strings only."
+        })
+        return;
+      }
+      //Invalid Date Format
+      if (dob.match(/^\d{4}-\d{2}-\d{2}$/) === null) {
+        res.status(400).json({
+          error: true,
+          message: "Invalid input: dob must be a real date in format YYYY-MM-DD."
+        })
+        return;
+      }
+      //Invalid Date
+      /*if (){
+        res.status(400).json({
+          error: true,
+          message: "Invalid input: dob must be a date in the past."
+        })
+        return;
+      }*/
       req.db.from('users').update({'firstname':firstName}, {'lastname':lastName}, {'dob':dob}, {'address':address}).where({ email })
       .then(user_profile => {
         res.status(200).json({
@@ -173,20 +211,15 @@ router.put('/:email/profile',function (req, res, next) {
           address
         })
       })
-    } else {
+    } else { 
+    //Authentificated non matching user
       res.status(403).json({
         error: true,
         message: "Forbidden"
       });
       return;
     }
-  } catch (e) {
-    res.status(401).json({
-      error: true,
-      message: "Invalid JWT token"
-    });
-    return;
-  }
+  
   
 });
 
